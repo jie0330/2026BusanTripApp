@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>2026''釜山Trip</title>
+    <title>2026''釜山夏日之旅</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;500;700&display=swap" rel="stylesheet">
@@ -12,28 +12,20 @@
     <style>
         :root { --main-lime: #bef264; --dark-lime: #84cc16; --bg-yellow: #fefce8; }
         body { font-family: 'M PLUS Rounded 1c', sans-serif; background-color: var(--bg-yellow); color: #334155; }
-        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
         .pt-safe { padding-top: env(safe-area-inset-top); }
-
-        /* 按鈕基礎樣式 */
         .clickable { cursor: pointer !important; pointer-events: auto !important; }
-        
-        /* 天數按鈕：淺黃綠色調 */
         .day-active { background-color: var(--dark-lime) !important; color: white !important; border-color: var(--dark-lime) !important; }
         .day-inactive { background-color: white !important; color: #4d7c0f !important; border-color: var(--main-lime) !important; }
-
-        /* 新增按鈕：改為淺黃綠色加深陰影 */
         .add-btn-fixed {
             position: fixed !important; bottom: 30px !important; right: 20px !important;
             background-color: var(--dark-lime) !important; color: white !important;
             width: 60px !important; height: 60px !important; border-radius: 50% !important;
-            z-index: 9999 !important; border: 4px solid white !important;
+            z-index: 999 !important; border: 4px solid white !important;
             display: flex !important; align-items: center !important; justify-content: center !important;
             font-size: 30px !important; box-shadow: 0 8px 20px rgba(132, 204, 22, 0.4) !important;
         }
-
         #schedule-map { width: 100%; height: 100%; z-index: 1; border-radius: 20px; }
     </style>
 </head>
@@ -42,20 +34,20 @@
 <div id="app" class="flex flex-col h-full relative">
     <header class="bg-white pt-safe shadow-sm border-b border-lime-200 sticky top-0 z-[100]">
         <div class="px-6 pt-4 pb-2 flex justify-between items-center">
-            <h1 class="text-lg font-bold text-gray-800">釜山Trip 🌿</h1>
+            <h1 class="text-lg font-bold text-gray-800">釜山夏日之旅 🌿</h1>
             <button @click="showDataModal = true" class="clickable text-gray-400 p-2 text-xl">⚙️</button>
         </div>
         
         <div class="flex border-b border-gray-100">
             <button v-for="tab in ['schedule', 'money', 'memo']" :key="tab" @click="currentTab = tab" 
-                class="clickable flex-1 py-3 text-sm font-bold" 
+                class="clickable flex-1 py-3 text-sm font-bold transition-colors" 
                 :class="currentTab === tab ? 'text-lime-700 border-b-4 border-lime-500' : 'text-gray-400'">
-                {{ {schedule:'行程', money:'分帳', memo:'備忘'}[tab] }}
+                {{ {schedule:'行程', money:'分帳', memo:'備忘錄'}[tab] }}
             </button>
         </div>
 
         <div v-if="currentTab === 'schedule'" class="px-4 py-3 bg-lime-50/50 flex items-center gap-2 overflow-x-auto no-scrollbar relative z-[110]">
-             <button v-for="(day, index) in days" :key="index" @click="changeDay(index)" 
+             <button v-for="(day, index) in days" :key="index" @click="currentDayIndex = index" 
                 class="clickable flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border-2 transition-all shadow-sm" 
                 :class="currentDayIndex === index ? 'day-active' : 'day-inactive'">
                 DAY {{ index }}
@@ -65,7 +57,6 @@
     </header>
 
     <main class="flex-1 overflow-y-auto p-5 pb-28 relative z-10">
-        
         <div v-if="currentTab === 'schedule'" class="space-y-6">
             <div class="w-full h-48 rounded-[30px] overflow-hidden border-4 border-white shadow-sm">
                 <div id="schedule-map"></div>
@@ -77,78 +68,75 @@
 
                     <div class="p-4 rounded-2xl shadow-sm border border-white bg-white/80">
                         <div class="flex justify-between items-start">
-                            <div class="flex-1">
-                                <div class="font-bold text-[10px] text-lime-600 mb-1 uppercase tracking-widest">{{ event.time }}</div>
+                            <div class="flex-1 pr-2">
+                                <div class="font-bold text-[10px] text-lime-600 mb-1 tracking-widest">{{ event.time }}</div>
                                 
                                 <div v-if="event.type === 'spot'">
                                     <h3 class="font-bold text-gray-800 text-base">{{ event.location }}</h3>
                                     <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(event.location)" target="_blank" 
-                                       class="clickable mt-3 inline-flex items-center text-[11px] bg-sky-50 text-sky-600 border border-sky-200 px-4 py-2 rounded-full font-bold">
-                                        🗺️ Naver 地圖搜尋
+                                       class="clickable mt-2 inline-flex items-center text-[10px] bg-sky-50 text-sky-600 border border-sky-200 px-3 py-1.5 rounded-full font-bold">
+                                        🗺️ Naver 地圖
+                                    </a>
+                                </div>
+                                <div v-else>
+                                    <div class="text-sm font-bold text-gray-700">{{ event.origin }} ➔ {{ event.destination }}</div>
+                                    <a :href="'https://map.naver.com/v5/directions/' + encodeURIComponent(event.origin) + ',,,' + '/' + encodeURIComponent(event.destination) + ',,,' + '/transit'" 
+                                       target="_blank" 
+                                       class="clickable mt-2 inline-flex items-center text-[10px] bg-lime-50 text-lime-700 border border-lime-200 px-3 py-1.5 rounded-full font-bold">
+                                        🚀 路線導航
                                     </a>
                                 </div>
 
-                                <div v-else>
-                                    <div class="text-sm font-bold text-gray-700">
-                                        {{ event.origin }} ➔ {{ event.destination }}
-                                    </div>
-                                    <a :href="'https://map.naver.com/v5/directions/' + encodeURIComponent(event.origin) + ',,,' + '/' + encodeURIComponent(event.destination) + ',,,' + '/transit'" 
-                                       target="_blank" 
-                                       class="clickable mt-3 inline-flex items-center text-[11px] bg-lime-50 text-lime-700 border border-lime-200 px-4 py-2 rounded-full font-bold">
-                                        🚀 Naver 交通導航
-                                    </a>
+                                <div v-if="event.note" class="mt-3 text-[11px] text-gray-500 bg-gray-50 p-2 rounded-lg italic">
+                                    {{ event.note }}
                                 </div>
                             </div>
-                            <button @click="deleteEvent(eIndex)" class="clickable text-gray-300 text-xl">×</button>
+                            <div class="flex flex-col gap-2">
+                                <button @click="deleteEvent(eIndex)" class="clickable text-gray-300 text-xl">×</button>
+                                <button @click="editEvent(eIndex)" class="clickable text-lime-400 text-sm">✎</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            
             <button @click="openAddModal" class="add-btn-fixed clickable">+</button>
         </div>
 
         <div v-if="currentTab === 'money'" class="space-y-4">
              <div class="bg-white p-6 rounded-[30px] shadow-sm border border-lime-100 text-center">
-                <div class="text-[10px] text-gray-400 font-bold uppercase mb-1">預估總支出</div>
+                <div class="text-[10px] text-gray-400 font-bold mb-1 uppercase">預估支出</div>
                 <div class="text-3xl font-bold text-gray-800">₩{{ totalSpentKRW.toLocaleString() }}</div>
                 <div class="text-lime-600 font-bold text-sm">≈ NT$ {{ Math.round(totalSpentKRW * exchangeRate).toLocaleString() }}</div>
             </div>
-
             <div class="space-y-2">
-                <div v-for="person in people" class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm">
+                <div v-for="person in people" class="bg-white p-4 rounded-2xl flex justify-between shadow-sm">
                     <span class="font-bold text-gray-700">{{ person.name }}</span>
                     <span :class="person.balance >= 0 ? 'text-green-500' : 'text-red-400'" class="font-bold">
-                        {{ person.balance >= 0 ? '應收' : '應付' }} ${{ Math.round(Math.abs(person.balance) * exchangeRate).toLocaleString() }}
+                        {{ person.balance >= 0 ? '收' : '付' }} ${{ Math.round(Math.abs(person.balance) * exchangeRate).toLocaleString() }}
                     </span>
                 </div>
             </div>
-
             <button @click="showExpenseModal = true" class="clickable w-full bg-lime-500 text-white py-4 rounded-2xl font-bold shadow-md">新增支出紀錄</button>
-            
-            <div class="space-y-2">
-                <div v-for="(record, idx) in expenses" :key="idx" class="text-xs bg-white/50 p-3 rounded-xl flex justify-between border border-white">
-                    <span>{{ record.item }} ({{ record.payer }})</span>
-                    <span class="font-bold">₩{{ record.amount.toLocaleString() }}</span>
-                </div>
-            </div>
         </div>
 
         <div v-if="currentTab === 'memo'" class="space-y-4">
-            <div class="bg-white p-4 rounded-2xl shadow-sm">
-                <textarea v-model="newMemoContent" placeholder="在此輸入重要資訊..." class="w-full border-none h-24 text-sm focus:ring-0"></textarea>
-                <button @click="addMemo" class="w-full bg-gray-800 text-white py-3 rounded-xl font-bold text-xs">儲存備忘</button>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-lime-100">
+                <textarea v-model="newMemoContent" placeholder="在此輸入備註、訂單編號..." class="w-full border-none h-24 text-sm focus:ring-0"></textarea>
+                <button @click="addMemo" class="w-full bg-gray-800 text-white py-3 rounded-xl font-bold text-xs">儲存備忘錄</button>
             </div>
-            <div v-for="(m, i) in memos" :key="m.id" class="bg-white p-4 rounded-xl shadow-sm relative">
+            <div v-for="(m, i) in memos" :key="m.id" class="bg-white p-4 rounded-xl shadow-sm relative border-l-4 border-lime-400">
                 <button @click="memos.splice(i, 1)" class="absolute top-2 right-2 text-gray-300">×</button>
-                <p class="text-sm whitespace-pre-wrap">{{ m.content }}</p>
+                <p class="text-sm whitespace-pre-wrap text-gray-700 leading-relaxed">{{ m.content }}</p>
             </div>
         </div>
     </main>
 
     <div v-if="showAddModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-end justify-center">
         <div class="bg-white w-full max-w-sm p-6 rounded-t-[40px] shadow-2xl pb-10">
-            <div class="flex justify-between items-center mb-6"><h3 class="font-bold">新增計畫</h3><button @click="showAddModal = false" class="clickable text-2xl text-gray-300">✕</button></div>
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold">{{ isEditing ? '編輯行程' : '新增計畫' }}</h3>
+                <button @click="showAddModal = false" class="clickable text-2xl text-gray-300">✕</button>
+            </div>
             <div class="space-y-4">
                 <input v-model="tempEvent.time" type="time" class="w-full bg-gray-50 p-4 rounded-2xl border-none font-bold">
                 <div class="flex bg-gray-100 p-1.5 rounded-2xl">
@@ -160,18 +148,19 @@
                     <input v-model="tempEvent.origin" placeholder="起點" class="bg-gray-50 p-4 rounded-2xl border-none font-bold">
                     <input v-model="tempEvent.destination" placeholder="終點" class="bg-gray-50 p-4 rounded-2xl border-none font-bold">
                 </div>
-                <button @click="saveEvent" class="clickable w-full bg-lime-500 text-white py-4 rounded-2xl font-bold shadow-lg">確認加入</button>
+                <textarea v-model="tempEvent.note" placeholder="輸入備註 (例如: 必點辣炒年糕)" class="w-full bg-gray-50 p-4 rounded-2xl border-none text-sm h-20"></textarea>
+                <button @click="saveEvent" class="clickable w-full bg-lime-500 text-white py-4 rounded-2xl font-bold shadow-lg">{{ isEditing ? '儲存修改' : '確認加入' }}</button>
             </div>
         </div>
     </div>
 
     <div v-if="showExpenseModal" class="fixed inset-0 bg-black/60 z-[9999] flex items-end justify-center">
         <div class="bg-white w-full max-w-sm p-6 rounded-t-[30px] pb-10">
-            <h3 class="font-bold mb-4 text-center">誰付了錢？</h3>
+            <h3 class="font-bold mb-4 text-center">費用支出 ₩</h3>
             <div class="flex gap-2 mb-4">
                 <button v-for="n in peopleNames" @click="newExpense.payer = n" :class="newExpense.payer === n ? 'bg-lime-500 text-white' : 'bg-gray-100'" class="clickable flex-1 py-3 rounded-xl font-bold text-xs">{{ n }}</button>
             </div>
-            <input v-model="newExpense.item" placeholder="項目" class="w-full bg-gray-50 p-4 rounded-2xl border-none mb-3">
+            <input v-model="newExpense.item" placeholder="項目" class="w-full bg-gray-50 p-4 rounded-2xl border-none mb-3 font-bold">
             <input v-model.number="newExpense.amount" type="number" placeholder="金額 (KRW)" class="w-full bg-gray-50 p-4 rounded-2xl border-none mb-4" inputmode="numeric">
             <button @click="saveExpense" class="clickable w-full bg-lime-500 text-white py-4 rounded-2xl font-bold">確認儲存</button>
         </div>
@@ -179,15 +168,12 @@
 
     <div v-if="showDataModal" class="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-sm p-8 rounded-[40px] shadow-2xl">
-            <h3 class="font-bold text-xl mb-6 flex items-center gap-2">⚙️ 系統設定</h3>
+            <h3 class="font-bold text-xl mb-6">⚙️ 系統設定</h3>
             <div class="space-y-4">
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase">匯率 (1 KRW to TWD)</label>
-                    <input v-model.number="exchangeRate" type="number" step="0.0001" class="w-full bg-gray-100 p-3 rounded-xl border-none font-bold mt-1">
-                </div>
+                <div><label class="text-[10px] text-gray-400 font-bold">匯率 (1 KRW to TWD)</label><input v-model.number="exchangeRate" type="number" step="0.0001" class="w-full bg-gray-100 p-3 rounded-xl border-none font-bold mt-1"></div>
                 <button @click="exportData" class="clickable w-full bg-gray-800 text-white py-3 rounded-xl font-bold">匯出 JSON 備份</button>
-                <button @click="resetData" class="clickable w-full text-red-400 text-xs font-bold py-2">清空所有資料</button>
-                <button @click="showDataModal = false" class="clickable w-full text-gray-400 mt-4">關閉視窗</button>
+                <button @click="resetData" class="clickable w-full text-red-400 text-xs font-bold">清空資料</button>
+                <button @click="showDataModal = false" class="clickable w-full text-gray-400 mt-4">關閉</button>
             </div>
         </div>
     </div>
@@ -201,6 +187,8 @@
             const showAddModal = ref(false);
             const showExpenseModal = ref(false);
             const showDataModal = ref(false);
+            const isEditing = ref(false);
+            const editIndex = ref(-1);
             const currentDayIndex = ref(0);
             const exchangeRate = ref(0.024);
             const peopleNames = ['小羊', '小菜', '小王'];
@@ -209,10 +197,9 @@
             const memos = ref([]);
             const newMemoContent = ref('');
             const newExpense = ref({ payer: '小羊', item: '', amount: 0 });
-            const tempEvent = ref({ type: 'spot', time: '12:00', location: '', origin: '', destination: '' });
+            const tempEvent = ref({ type: 'spot', time: '12:00', location: '', origin: '', destination: '', note: '' });
 
             let map = null;
-
             const initMap = async () => {
                 await nextTick();
                 if (!map) {
@@ -221,11 +208,24 @@
                 }
             };
 
+            const openAddModal = () => { isEditing.value = false; tempEvent.value = { type: 'spot', time: '12:00', location: '', origin: '', destination: '', note: '' }; showAddModal.value = true; };
+            
+            const editEvent = (idx) => {
+                isEditing.value = true;
+                editIndex.value = idx;
+                tempEvent.value = { ...days.value[currentDayIndex.value].events[idx] };
+                showAddModal.value = true;
+            };
+
             const saveEvent = () => {
-                days.value[currentDayIndex.value].events.push({ id: Date.now(), ...tempEvent.value });
-                days.value[currentDayIndex.value].events.sort((a, b) => a.time.localeCompare(b.time));
+                const currentEvents = days.value[currentDayIndex.value].events;
+                if (isEditing.value) {
+                    currentEvents[editIndex.value] = { ...tempEvent.value };
+                } else {
+                    currentEvents.push({ id: Date.now(), ...tempEvent.value });
+                }
+                currentEvents.sort((a, b) => a.time.localeCompare(b.time));
                 showAddModal.value = false;
-                tempEvent.value = { type: 'spot', time: '12:00', location: '', origin: '', destination: '' };
             };
 
             const saveExpense = () => {
@@ -250,10 +250,10 @@
             };
 
             onMounted(() => {
-                const saved = localStorage.getItem('Busan_Trip_v4');
+                const saved = localStorage.getItem('Busan_Trip_v5');
                 if (saved) {
                     const p = JSON.parse(saved);
-                    days.value = p.days || days.value;
+                    days.value = p.days || [{ events: [] }];
                     expenses.value = p.expenses || [];
                     memos.value = p.memos || [];
                     exchangeRate.value = p.exchangeRate || 0.024;
@@ -262,18 +262,16 @@
             });
 
             watch([days, expenses, memos, exchangeRate], () => {
-                localStorage.setItem('Busan_Trip_v4', JSON.stringify({ days: days.value, expenses: expenses.value, memos: memos.value, exchangeRate: exchangeRate.value }));
+                localStorage.setItem('Busan_Trip_v5', JSON.stringify({ days: days.value, expenses: expenses.value, memos: memos.value, exchangeRate: exchangeRate.value }));
             }, { deep: true });
 
             return { 
-                currentTab, showAddModal, showExpenseModal, showDataModal, currentDayIndex, days, tempEvent, 
-                saveEvent, totalSpentKRW, exchangeRate, peopleNames, expenses, newExpense, saveExpense, people,
-                changeDay: (i) => { currentDayIndex.value = i; },
+                currentTab, showAddModal, showExpenseModal, showDataModal, currentDayIndex, days, tempEvent, isEditing,
+                openAddModal, editEvent, saveEvent, totalSpentKRW, exchangeRate, peopleNames, expenses, newExpense, saveExpense, people,
                 addDay: () => days.value.push({ events: [] }),
-                openAddModal: () => { showAddModal.value = true; },
                 deleteEvent: (idx) => { days.value[currentDayIndex.value].events.splice(idx, 1); },
                 memos, newMemoContent, addMemo: () => { if(newMemoContent.value) { memos.value.unshift({ id: Date.now(), content: newMemoContent.value }); newMemoContent.value = ''; } },
-                exportData, resetData: () => { if(confirm('重置將刪除所有紀錄，確定嗎？')) { localStorage.clear(); location.reload(); } }
+                exportData, resetData: () => { if(confirm('確定要清空所有資料嗎？')) { localStorage.clear(); location.reload(); } }
             };
         }
     }).mount('#app');

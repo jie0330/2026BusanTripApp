@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>2026''釜山夏日之旅</title>
+    <title>2026''釜山Trip</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;500;700&display=swap" rel="stylesheet">
@@ -34,7 +34,7 @@
 <div id="app" class="flex flex-col h-full relative">
     <header class="bg-white pt-safe shadow-sm border-b border-lime-200 sticky top-0 z-[100]">
         <div class="px-6 pt-4 pb-2 flex justify-between items-center">
-            <h1 class="text-lg font-bold text-gray-800">釜山夏日之旅 🌿</h1>
+            <h1 class="text-lg font-bold text-gray-800">釜山Trip 🌿</h1>
             <button @click="showDataModal = true" class="clickable text-gray-400 p-2 text-xl">⚙️</button>
         </div>
         
@@ -78,7 +78,7 @@
                                 </div>
                                 <div v-else>
                                     <div class="text-sm font-bold text-gray-700">{{ event.origin }} ➔ {{ event.destination }}</div>
-                                    <a :href="'https://map.naver.com/v5/directions/' + encodeURIComponent(event.origin) + ',,,' + '/' + encodeURIComponent(event.destination) + ',,,' + '/transit'" target="_blank" class="clickable mt-2 inline-flex items-center text-[10px] bg-lime-50 text-lime-700 border border-lime-200 px-3 py-1.5 rounded-full font-bold">🚀 導航</a>
+                                    <a :href="'https://map.naver.com/v5/directions/' + encodeURIComponent(event.origin) + '/'+ encodeURIComponent(event.destination) + '/transit'" target="_blank" class="clickable mt-2 inline-flex items-center text-[10px] bg-lime-50 text-lime-700 border border-lime-200 px-3 py-1.5 rounded-full font-bold">🚀 路線規劃</a>
                                 </div>
                                 <div v-if="event.note" class="mt-3 text-[11px] text-gray-500 bg-gray-50 p-2 rounded-lg italic">{{ event.note }}</div>
                             </div>
@@ -117,7 +117,7 @@
 
         <div v-if="currentTab === 'memo'" class="space-y-4">
             <div class="bg-white p-4 rounded-2xl shadow-sm border border-lime-100">
-                <textarea v-model="newMemoContent" placeholder="在此輸入資訊..." class="w-full border-none h-24 text-sm focus:ring-0"></textarea>
+                <textarea v-model="newMemoContent" placeholder="在此輸入備忘..." class="w-full border-none h-24 text-sm focus:ring-0"></textarea>
                 <button @click="addMemo" class="w-full bg-gray-800 text-white py-3 rounded-xl font-bold text-xs">儲存備忘錄</button>
             </div>
             <div v-for="(m, i) in memos" :key="m.id" class="bg-white p-4 rounded-xl shadow-sm relative border-l-4 border-lime-400">
@@ -137,7 +137,7 @@
                     <button @click="tempEvent.type = 'transit'" :class="tempEvent.type === 'transit' ? 'bg-white shadow-sm text-gray-700' : 'text-gray-400'" class="clickable flex-1 py-2.5 rounded-xl text-xs font-bold">🚆 交通</button>
                 </div>
                 <div v-if="tempEvent.type === 'transit'" class="grid grid-cols-5 gap-1">
-                    <button v-for="m in ['Subway','Bus','Taxi','Walk','Flight']" @click="tempEvent.transportMode = m" 
+                    <button v-for="m in ['Subway','Bus','Taxi','Walk','Flight']" :key="m" @click="tempEvent.transportMode = m" 
                         :class="tempEvent.transportMode === m ? 'bg-lime-200 border-lime-500' : 'bg-gray-50 border-transparent'" 
                         class="border py-2 rounded-lg text-[10px] flex flex-col items-center">
                         <span>{{ getTransportIcon(m) }}</span>
@@ -159,16 +159,15 @@
         <div class="bg-white w-full max-w-sm p-6 rounded-t-[30px] pb-10 shadow-2xl">
             <h3 class="font-bold mb-4 text-center">費用支出</h3>
             <div class="flex gap-2 mb-4">
-                <button v-for="n in peopleNames" @click="newExpense.payer = n" :class="newExpense.payer === n ? 'bg-lime-500 text-white' : 'bg-gray-100'" class="clickable flex-1 py-3 rounded-xl font-bold text-xs">{{ n }}</button>
+                <button v-for="n in peopleNames" :key="n" @click="newExpense.payer = n" :class="newExpense.payer === n ? 'bg-lime-500 text-white' : 'bg-gray-100'" class="clickable flex-1 py-3 rounded-xl font-bold text-xs">{{ n }}</button>
             </div>
             <div class="flex gap-2 mb-4">
                 <button @click="newExpense.currency = 'KRW'" :class="newExpense.currency === 'KRW' ? 'bg-lime-200 border-lime-500 text-lime-800' : 'bg-gray-50 text-gray-400'" class="flex-1 py-2 border rounded-xl font-bold text-xs">₩ 韓幣</button>
                 <button @click="newExpense.currency = 'TWD'" :class="newExpense.currency === 'TWD' ? 'bg-lime-200 border-lime-500 text-lime-800' : 'bg-gray-50 text-gray-400'" class="flex-1 py-2 border rounded-xl font-bold text-xs">$ 台幣</button>
             </div>
-            <input v-model="newExpense.item" placeholder="項目" class="w-full bg-gray-50 p-4 rounded-2xl border-none mb-3 font-bold">
+            <input v-model="newExpense.item" placeholder="項目" class="w-full bg-gray-50 p-4 rounded-2xl border-none mb-3 font-bold text-center">
             <div class="relative mb-6">
-                <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="w-full bg-gray-50 p-4 rounded-2xl border-none font-bold" inputmode="numeric">
-                <div class="absolute right-4 top-4 text-gray-400 font-bold">{{ newExpense.currency }}</div>
+                <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="w-full bg-gray-50 p-4 rounded-2xl border-none font-bold text-center" inputmode="numeric">
             </div>
             <div class="flex gap-3">
                 <button @click="showExpenseModal = false" class="flex-1 bg-gray-100 text-gray-400 py-4 rounded-2xl font-bold">取消</button>
@@ -219,6 +218,7 @@
 
             const openAddModal = () => { isEditing.value = false; tempEvent.value = { type: 'spot', time: '12:00', location: '', origin: '', destination: '', note: '', transportMode: 'Subway' }; showAddModal.value = true; };
             const editEvent = (idx) => { isEditing.value = true; editIndex.value = idx; tempEvent.value = { ...days.value[currentDayIndex.value].events[idx] }; showAddModal.value = true; };
+            
             const saveEvent = () => {
                 const evs = days.value[currentDayIndex.value].events;
                 if (isEditing.value) evs[editIndex.value] = { ...tempEvent.value };

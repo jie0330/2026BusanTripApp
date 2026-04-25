@@ -30,8 +30,7 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 30px; box-shadow: 0 8px 20px rgba(132, 204, 22, 0.4);
         }
-        /* 修正地圖容器，確保高度固定 */
-        .map-wrapper { width: 100%; height: 200px; border-radius: 24px; overflow: hidden; background: #eee; border: 4px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .map-wrapper { width: 100%; height: 180px; border-radius: 24px; overflow: hidden; background: #eee; border: 4px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         #schedule-map { width: 100%; height: 100%; z-index: 1; }
     </style>
 </head>
@@ -62,7 +61,7 @@
         </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto p-5 pb-32" id="main-content">
+    <main class="flex-1 overflow-y-auto p-5 pt-8 pb-32" id="main-content">
         <div v-if="currentTab === 'schedule'" class="space-y-6">
             <div class="map-wrapper">
                 <div id="schedule-map"></div>
@@ -84,8 +83,15 @@
                                     <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(event.location)" target="_blank" class="clickable mt-2 inline-flex items-center text-[10px] bg-sky-50 text-sky-600 border border-sky-200 px-3 py-1.5 rounded-full font-bold">Naver Map</a>
                                 </div>
                                 
-                                <div v-else>
-                                    <div class="text-sm font-bold text-gray-700">{{ event.origin }} ➔ {{ event.destination }}</div>
+                                <div v-else class="space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[9px] bg-gray-400 text-white px-1 rounded">FROM</span>
+                                        <span class="text-sm font-medium text-gray-500">{{ event.origin }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[9px] bg-lime-500 text-white px-1 rounded text-center" style="min-width: 28px;">TO</span>
+                                        <span class="text-sm font-bold text-gray-800">{{ event.destination }}</span>
+                                    </div>
                                     <a :href="'https://map.naver.com/v5/directions/-/,-/' + encodeURIComponent(event.destination) + ',,,address'" 
                                        target="_blank" 
                                        class="clickable mt-2 inline-flex items-center text-[10px] bg-lime-50 text-lime-700 border border-lime-200 px-3 py-1.5 rounded-full font-bold">
@@ -120,7 +126,6 @@
                 </div>
             </div>
             <button @click="openExpenseModal" class="clickable w-full bg-lime-500 text-white py-4 rounded-2xl font-bold shadow-md">新增支出紀錄</button>
-            
             <div class="space-y-2 mt-4">
                 <h4 class="text-[10px] font-bold text-gray-400 ml-2 mb-1 uppercase tracking-widest">Expense Records</h4>
                 <div v-for="(record, idx) in expenses" :key="record.id" class="bg-white/60 p-4 rounded-xl flex justify-between items-center border border-white shadow-sm">
@@ -156,8 +161,15 @@
                 </div>
                 <input v-if="tempEvent.type === 'spot'" v-model="tempEvent.location" placeholder="地點名稱" class="w-full bg-gray-50 p-4 rounded-2xl border-none font-bold">
                 <div v-else class="grid grid-cols-2 gap-2">
-                    <input v-model="tempEvent.origin" placeholder="起點" class="bg-gray-50 p-4 rounded-2xl border-none font-bold">
-                    <input v-model="tempEvent.destination" placeholder="終點" class="bg-gray-50 p-4 rounded-2xl border-none font-bold">
+                    <input v-model="tempEvent.origin" placeholder="起點 (From)" class="bg-gray-50 p-4 rounded-2xl border-none font-bold text-sm">
+                    <input v-model="tempEvent.destination" placeholder="終點 (To)" class="bg-gray-50 p-4 rounded-2xl border-none font-bold text-sm">
+                </div>
+                <div class="flex gap-1 overflow-x-auto no-scrollbar py-1">
+                    <button v-for="m in ['Subway','Bus','Taxi','Walk','Flight']" @click="tempEvent.transportMode = m" 
+                        :class="tempEvent.transportMode === m ? 'bg-lime-500 text-white' : 'bg-gray-100 text-gray-400'"
+                        class="px-3 py-2 rounded-xl text-[10px] font-bold flex-shrink-0 transition-colors">
+                        {{ getTransportIcon(m) }} {{ m }}
+                    </button>
                 </div>
                 <textarea v-model="tempEvent.note" placeholder="備註..." class="w-full bg-gray-50 p-4 rounded-2xl border-none text-sm h-16"></textarea>
                 <button @click="saveEvent" class="clickable w-full bg-lime-500 text-white py-4 rounded-2xl font-bold shadow-lg">確認儲存</button>
@@ -207,7 +219,6 @@
             const showAddModal = ref(false), showExpenseModal = ref(false), showDataModal = ref(false);
             const isEditing = ref(false), editIndex = ref(-1), currentDayIndex = ref(0);
             const isEditingExpense = ref(false), editExpenseIdx = ref(-1);
-            
             const exchangeRate = ref(0.024);
             const peopleNames = ['小羊', '小菜', '小王'];
             const days = ref([{ events: [] }]);
@@ -219,45 +230,20 @@
 
             const getTransportIcon = (m) => ({ 'Subway':'🚇', 'Bus':'🚌', 'Taxi':'🚕', 'Walk':'🚶', 'Flight':'✈️' }[m] || '📍');
 
-            // --- 地圖處理核心 ---
             let map = null;
             const initMap = async () => {
-                await nextTick(); // 等待 Vue 渲染 DOM
+                await nextTick();
                 const mapContainer = document.getElementById('schedule-map');
                 if (!mapContainer) return;
-
-                // 如果已經有地圖實體，先移除它
-                if (map) {
-                    map.remove();
-                    map = null;
-                }
-
-                // 重新初始化
-                map = L.map('schedule-map', { 
-                    zoomControl: false, 
-                    attributionControl: false 
-                }).setView([35.1796, 129.0756], 12);
-                
+                if (map) { map.remove(); map = null; }
+                map = L.map('schedule-map', { zoomControl: false, attributionControl: false }).setView([35.1796, 129.0756], 12);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             };
 
-            // 監聽 Tab 切換
             watch(currentTab, (newTab) => {
-                // 每次切換分頁都讓內容區域回到頂部，防止版面跳動
                 const main = document.getElementById('main-content');
                 if (main) main.scrollTop = 0;
-
-                // 如果切換回行程，重新載入地圖
-                if (newTab === 'schedule') {
-                    initMap();
-                }
-            });
-
-            // 監聽天數切換（有時候地圖在天數切換時也需要 resize）
-            watch(currentDayIndex, () => {
-                if (map) {
-                    setTimeout(() => map.invalidateSize(), 100);
-                }
+                if (newTab === 'schedule') initMap();
             });
 
             const openAddModal = () => { isEditing.value = false; tempEvent.value = { type: 'spot', time: '12:00', location: '', origin: '', destination: '', note: '', transportMode: 'Subway' }; showAddModal.value = true; };
@@ -270,44 +256,20 @@
                 showAddModal.value = false;
             };
 
-            const openExpenseModal = () => {
-                isEditingExpense.value = false;
-                newExpense.value = { id: Date.now(), payer: '小羊', item: '', amount: 0, currency: 'KRW' };
-                showExpenseModal.value = true;
-            };
-            
-            const editExpense = (idx) => {
-                isEditingExpense.value = true;
-                editExpenseIdx.value = idx;
-                newExpense.value = { ...expenses.value[idx] };
-                showExpenseModal.value = true;
-            };
-
+            const openExpenseModal = () => { isEditingExpense.value = false; newExpense.value = { id: Date.now(), payer: '小羊', item: '', amount: 0, currency: 'KRW' }; showExpenseModal.value = true; };
+            const editExpense = (idx) => { isEditingExpense.value = true; editExpenseIdx.value = idx; newExpense.value = { ...expenses.value[idx] }; showExpenseModal.value = true; };
             const saveExpense = () => {
                 if(newExpense.value.amount > 0) {
-                    if(isEditingExpense.value) {
-                        expenses.value[editExpenseIdx.value] = { ...newExpense.value };
-                    } else {
-                        expenses.value.unshift({ ...newExpense.value });
-                    }
+                    if(isEditingExpense.value) expenses.value[editExpenseIdx.value] = { ...newExpense.value };
+                    else expenses.value.unshift({ ...newExpense.value });
                     showExpenseModal.value = false;
                 }
             };
-
             const deleteExpense = (idx) => { if(confirm('確定刪除這筆支出紀錄？')) expenses.value.splice(idx, 1); };
 
-            const totalSpentKRW = computed(() => {
-                return expenses.value.reduce((s, i) => {
-                    let val = i.currency === 'KRW' ? i.amount : (i.amount / exchangeRate.value);
-                    return s + val;
-                }, 0);
-            });
-
+            const totalSpentKRW = computed(() => expenses.value.reduce((s, i) => s + (i.currency === 'KRW' ? i.amount : (i.amount / exchangeRate.value)), 0));
             const people = computed(() => peopleNames.map(name => {
-                let paid = expenses.value.filter(e => e.payer === name).reduce((s, i) => {
-                    let val = i.currency === 'KRW' ? i.amount : (i.amount / exchangeRate.value);
-                    return s + val;
-                }, 0);
+                let paid = expenses.value.filter(e => e.payer === name).reduce((s, i) => s + (i.currency === 'KRW' ? i.amount : (i.amount / exchangeRate.value)), 0);
                 return { name, balance: paid - (totalSpentKRW.value / peopleNames.length) };
             }));
 
@@ -327,9 +289,7 @@
                     memos.value = p.memos || [];
                     exchangeRate.value = p.exchangeRate || 0.024;
                 }
-                if (currentTab.value === 'schedule') {
-                    initMap();
-                }
+                if (currentTab.value === 'schedule') initMap();
             });
 
             watch([days, expenses, memos, exchangeRate], () => {

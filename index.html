@@ -3,151 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>2026''釜山Trip</title>
+    <title>2026''釜山夏日之旅</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        :root { --bg-color: #f7fee7; --summer: #65a30d; --btn-orange: #f97316; }
-        body { font-family: 'M PLUS Rounded 1c', sans-serif; background-color: var(--bg-color); color: #334155; }
+        :root { --summer: #84cc16; --summer-dark: #4d7c0f; --summer-light: #d9f99d; }
+        body { font-family: 'M PLUS Rounded 1c', sans-serif; background-color: #f7fee7; color: #334155; }
         
-        /* 1. 強制按鈕層級與點擊穿透 */
-        .clickable { cursor: pointer !important; pointer-events: auto !important; z-index: 9999 !important; }
+        /* 強制提高所有按鈕的可點擊層級 */
+        .clickable-ui { cursor: pointer !important; pointer-events: auto !important; z-index: 100 !important; }
         
-        /* 2. 天數按鈕樣式強化 */
-        .day-active { background-color: #365314 !important; color: white !important; border-color: #365314 !important; }
-        .day-inactive { background-color: #d9f99d !important; color: #3f6212 !important; border-color: #bef264 !important; }
+        /* 天數按鈕：選中時深綠，未選中時亮綠 */
+        .day-active { background-color: var(--summer-dark) !important; color: white !important; border-color: var(--summer-dark) !important; }
+        .day-inactive { background-color: var(--summer-light) !important; color: var(--summer-dark) !important; border-color: var(--summer) !important; }
 
-        /* 3. 新增按鈕特效 (亮橘色) */
-        .add-btn-fixed {
-            position: fixed !important; bottom: 32px !important; right: 24px !important;
-            background-color: var(--btn-orange) !important; color: white !important;
-            width: 64px !important; height: 64px !important; border-radius: 50% !important;
-            box-shadow: 0 10px 25px rgba(249, 115, 22, 0.4) !important;
-            z-index: 99999 !important; border: 3px solid white !important;
-            display: flex !important; align-items: center !important; justify-content: center !important;
-            font-size: 32px !important; font-weight: bold !important;
+        /* 新增按鈕：改為深綠色大圓鈕，確保在最上層 */
+        .floating-add-btn {
+            position: fixed !important; bottom: 40px !important; right: 24px !important;
+            background-color: var(--summer) !important; color: white !important;
+            width: 60px !important; height: 60px !important; border-radius: 50% !important;
+            z-index: 9999 !important; display: flex !important; align-items: center !important; justify-content: center !important;
+            font-size: 30px !important; box-shadow: 0 8px 20px rgba(132, 204, 22, 0.4) !important;
+            border: 2px solid white !important;
         }
 
-        /* 4. Naver 按鈕樣式強化 (高對比) */
-        .btn-naver-transit { background-color: #03c75a !important; color: white !important; font-weight: 800 !important; }
-        .btn-naver-spot { background-color: #007aff !important; color: white !important; font-weight: 800 !important; }
+        /* Naver Map 按鈕顏色 */
+        .btn-naver { background-color: #03c75a !important; color: white !important; font-weight: bold !important; border: none !important; }
 
-        #schedule-map { width: 100%; height: 100%; z-index: 1; border-radius: 24px; }
-        .map-wrapper { position: relative; z-index: 5; margin-bottom: 24px; }
-        .transit-line::before { content: ''; position: absolute; left: -20px; top: 24px; bottom: -24px; width: 2px; background-image: linear-gradient(to bottom, #a3e635 50%, transparent 50%); background-size: 2px 10px; z-index: 0; }
+        #schedule-map { width: 100%; height: 100%; z-index: 1; border-radius: 20px; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="h-screen overflow-hidden flex flex-col">
 
 <div id="app" class="flex flex-col h-full relative">
-    <header class="bg-white pt-safe shadow-md border-b-2 border-lime-200 sticky top-0 z-[100]">
+    <header class="bg-white/90 backdrop-blur-md pt-safe shadow-sm border-b border-slate-200 sticky top-0 z-[100]">
         <div class="px-6 pt-4 pb-2 flex justify-between items-center">
-            <h1 class="text-xl font-bold text-gray-800">釜山Trip 🌿</h1>
-            <div class="flex gap-2">
-                <button @click="refreshMap" class="clickable text-[11px] bg-lime-100 text-lime-800 px-3 py-1 rounded-full border border-lime-300">↻ 重整地圖</button>
-            </div>
+            <h1 class="text-xl font-bold text-gray-800">釜山夏日之旅 🌿</h1>
+            <button @click="refreshMap" class="text-[10px] bg-lime-100 text-lime-700 px-2 py-1 rounded-full">重整地圖</button>
         </div>
         
-        <div class="flex border-b border-gray-100">
+        <div class="flex border-b border-slate-100">
             <button v-for="tab in ['schedule', 'money', 'memo']" :key="tab" @click="currentTab = tab" 
-                class="clickable flex-1 py-4 text-sm font-black" 
-                :class="currentTab === tab ? 'text-lime-700 border-b-4 border-lime-600' : 'text-gray-400'">
+                class="clickable-ui flex-1 py-3 text-sm font-bold transition-all" 
+                :class="currentTab === tab ? 'text-lime-600 border-b-2 border-lime-600' : 'text-gray-400'">
                 {{ {schedule:'行程', money:'分帳', memo:'備忘'}[tab] }}
             </button>
         </div>
 
-        <div v-if="currentTab === 'schedule'" class="px-4 py-4 bg-lime-50/50 flex items-center gap-3 overflow-x-auto no-scrollbar relative z-[110]">
-             <button v-for="(day, index) in days" :key="index" @click="changeDay(index)" 
-                class="clickable flex-shrink-0 px-5 py-2 rounded-xl text-xs font-black border-2 transition-all shadow-sm" 
+        <div v-if="currentTab === 'schedule'" class="px-4 py-3 bg-white flex gap-2 overflow-x-auto no-scrollbar">
+             <button v-for="(day, index) in days" :key="index" @click="currentDayIndex = index" 
+                class="clickable-ui flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border transition-all" 
                 :class="currentDayIndex === index ? 'day-active' : 'day-inactive'">
-                DAY {{ index }}
+                Day {{ index }}
             </button>
-            <button @click="addDay" class="clickable flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl border-2 border-dashed border-lime-400 text-lime-600 bg-white font-bold">+</button>
+            <button @click="addDay" class="clickable-ui flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full border border-dashed border-lime-400 text-lime-600">+</button>
         </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto p-6 pb-32 relative z-10 bg-lime-50/20">
+    <main class="flex-1 overflow-y-auto p-6 pb-28 relative z-10">
         
         <div v-if="currentTab === 'schedule'" class="space-y-6">
-            <div class="map-wrapper w-full h-52 rounded-3xl overflow-hidden shadow-inner border-2 border-white">
+            <div class="w-full h-48 rounded-2xl overflow-hidden shadow-sm border border-white">
                 <div id="schedule-map"></div>
             </div>
 
-            <div class="relative space-y-6 pl-4 border-l-2 border-lime-200 ml-2">
+            <div class="relative space-y-5 pl-4 border-l-2 border-lime-200 ml-2">
                 <div v-for="(event, eIndex) in days[currentDayIndex].events" :key="event.id" class="relative pl-6">
-                    <div class="absolute -left-[22px] top-1 z-20 bg-white w-5 h-5 border-2 border-lime-500 rounded-full flex items-center justify-center text-[10px]">
-                         {{ event.type === 'transit' ? '✈️' : '📍' }}
-                    </div>
-
-                    <div class="p-5 rounded-3xl shadow-sm border-2 border-white bg-white/90">
+                    <div class="absolute -left-[21px] top-1 z-20 bg-white w-4 h-4 border-2 border-lime-500 rounded-full"></div>
+                    <div class="p-4 rounded-2xl shadow-sm border border-slate-100 bg-white">
                         <div class="flex justify-between items-start">
                             <div class="flex-1">
-                                <div class="font-black text-xs text-lime-600 mb-2 bg-lime-100 inline-block px-2 py-0.5 rounded">{{ event.time }}</div>
-                                
+                                <div class="font-bold text-[10px] text-lime-600 mb-1">{{ event.time }}</div>
                                 <div v-if="event.type === 'spot'">
-                                    <h3 class="font-black text-lg text-gray-800">{{ event.location }}</h3>
+                                    <h3 class="font-bold text-gray-800">{{ event.location }}</h3>
                                     <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(event.location)" target="_blank" 
-                                       class="clickable mt-4 inline-flex items-center text-xs btn-naver-spot px-5 py-2.5 rounded-full shadow-lg">
-                                        🗺️ 開啟 Naver Map 搜尋
+                                       class="clickable-ui mt-3 inline-flex items-center text-[11px] btn-naver px-4 py-2 rounded-full">
+                                        🗺️ Naver Map 搜尋
                                     </a>
                                 </div>
-
                                 <div v-else>
-                                    <div class="space-y-1 font-bold text-gray-700">
-                                        <div class="flex items-center"><span class="bg-gray-100 text-[10px] px-1.5 py-0.5 rounded mr-2">FROM</span> {{ event.origin }}</div>
-                                        <div class="flex items-center"><span class="bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded mr-2">TO</span> {{ event.destination }}</div>
-                                    </div>
+                                    <div class="text-sm font-bold text-gray-700">{{ event.origin }} ➔ {{ event.destination }}</div>
                                     <a :href="'https://map.naver.com/v5/directions/' + encodeURIComponent(event.origin) + ',,,' + '/' + encodeURIComponent(event.destination) + ',,,' + '/transit'" 
                                        target="_blank" 
-                                       class="clickable mt-4 inline-flex items-center text-xs btn-naver-transit px-5 py-2.5 rounded-full shadow-lg">
-                                        🚀 Naver 交通路線導航
+                                       class="clickable-ui mt-3 inline-flex items-center text-[11px] btn-naver px-4 py-2 rounded-full">
+                                        🛤️ Naver 交通導航
                                     </a>
                                 </div>
+                                <p v-if="event.note" class="text-gray-400 text-[11px] mt-2 italic">{{ event.note }}</p>
                             </div>
-                            <button @click="deleteEvent(eIndex)" class="clickable text-gray-300 hover:text-red-500 text-2xl">×</button>
+                            <button @click="deleteEvent(eIndex)" class="clickable-ui text-gray-300 hover:text-red-400 p-1">×</button>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <button @click="openAddModal" class="add-btn-fixed clickable">
-                +
-            </button>
+            <button @click="showAddModal = true" class="floating-add-btn clickable-ui">+</button>
         </div>
 
         <div v-if="currentTab === 'money'" class="space-y-4">
-             <div class="bg-white p-6 rounded-3xl shadow-sm border-2 border-lime-200 text-center">
-                <div class="text-3xl font-black text-gray-800">₩{{ totalSpentKRW.toLocaleString() }}</div>
-                <div class="text-lime-600 font-bold">≈ NT$ {{ Math.round(totalSpentKRW * exchangeRate).toLocaleString() }}</div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-lime-100 text-center">
+                <div class="text-2xl font-bold text-gray-800">₩{{ totalSpentKRW.toLocaleString() }}</div>
+                <div class="text-lime-600 text-sm font-bold">≈ NT$ {{ Math.round(totalSpentKRW * exchangeRate).toLocaleString() }}</div>
             </div>
-            <button @click="showExpenseModal = true" class="clickable w-full bg-lime-600 text-white py-4 rounded-2xl font-black shadow-lg">＋ 新增支出</button>
+            <button @click="showExpenseModal = true" class="clickable-ui w-full bg-lime-500 text-white py-3 rounded-xl font-bold">＋ 新增支出</button>
+            <div v-for="exp in expenses" class="bg-white p-3 rounded-lg text-sm flex justify-between shadow-sm border border-slate-50">
+                <span>{{ exp.item }} ({{ exp.payer }})</span>
+                <span class="font-bold">₩{{ exp.amount.toLocaleString() }}</span>
+            </div>
+        </div>
+
+        <div v-if="currentTab === 'memo'" class="space-y-4">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-lime-100">
+                <textarea v-model="newMemo" placeholder="輸入備註、訂單編號或重要資訊..." class="w-full border-none focus:ring-0 text-sm h-24 resize-none"></textarea>
+                <button @click="saveMemo" class="clickable-ui w-full bg-slate-700 text-white py-2 rounded-xl text-xs font-bold mt-2">儲存筆記</button>
+            </div>
+            <div v-for="(m, i) in memos" :key="m.id" class="bg-white p-4 rounded-xl shadow-sm relative border border-slate-100">
+                <button @click="memos.splice(i, 1)" class="absolute top-2 right-2 text-gray-300">×</button>
+                <p class="text-sm text-gray-600 whitespace-pre-wrap">{{ m.content }}</p>
+                <div class="text-[9px] text-gray-300 mt-2">{{ new Date(m.id).toLocaleString() }}</div>
+            </div>
         </div>
     </main>
 
-    <div v-if="showAddModal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-[99999] flex items-end justify-center">
-        <div class="bg-white w-full max-w-sm p-8 rounded-t-[40px] shadow-2xl pb-10">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="font-black text-xl">新增計畫</h3>
-                <button @click="showAddModal = false" class="clickable text-3xl text-gray-300">✕</button>
-            </div>
+    <div v-if="showAddModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-end justify-center">
+        <div class="bg-white w-full max-w-sm p-6 rounded-t-[30px] shadow-2xl pb-10">
+            <div class="flex justify-between items-center mb-6"><h3 class="font-bold">新增夏日計畫</h3><button @click="showAddModal = false" class="text-2xl text-gray-300">✕</button></div>
             <div class="space-y-4">
-                <input v-model="tempEvent.time" type="time" class="w-full bg-gray-100 p-4 rounded-2xl border-none font-bold text-lg">
-                <div class="flex bg-gray-100 p-2 rounded-2xl">
-                    <button @click="tempEvent.type = 'spot'" :class="tempEvent.type === 'spot' ? 'bg-white shadow-md text-lime-600' : 'text-gray-400'" class="clickable flex-1 py-3 rounded-xl font-black">📍 景點</button>
-                    <button @click="tempEvent.type = 'transit'" :class="tempEvent.type === 'transit' ? 'bg-white shadow-md text-gray-700' : 'text-gray-400'" class="clickable flex-1 py-3 rounded-xl font-black">🚆 交通</button>
+                <input v-model="tempEvent.time" type="time" class="w-full bg-slate-50 p-3 rounded-xl border-none font-bold">
+                <div class="flex bg-slate-100 p-1 rounded-xl">
+                    <button @click="tempEvent.type = 'spot'" :class="tempEvent.type === 'spot' ? 'bg-white text-lime-600 shadow-sm' : 'text-gray-400'" class="flex-1 py-2 rounded-lg font-bold text-xs">📍 景點</button>
+                    <button @click="tempEvent.type = 'transit'" :class="tempEvent.type === 'transit' ? 'bg-white text-gray-700 shadow-sm' : 'text-gray-400'" class="flex-1 py-2 rounded-lg font-bold text-xs">🚆 交通</button>
                 </div>
                 <div v-if="tempEvent.type === 'spot'">
-                    <input v-model="tempEvent.location" placeholder="輸入地點 (例如: 海雲台)" class="w-full bg-gray-100 p-4 rounded-2xl border-none font-bold">
+                    <input v-model="tempEvent.location" placeholder="地點名稱" class="w-full bg-slate-50 p-3 rounded-xl border-none">
                 </div>
-                <div v-else class="grid grid-cols-2 gap-3">
-                    <input v-model="tempEvent.origin" placeholder="起點" class="bg-gray-100 p-4 rounded-2xl border-none font-bold">
-                    <input v-model="tempEvent.destination" placeholder="終點" class="bg-gray-100 p-4 rounded-2xl border-none font-bold">
+                <div v-else class="grid grid-cols-2 gap-2">
+                    <input v-model="tempEvent.origin" placeholder="起點" class="bg-slate-50 p-3 rounded-xl border-none text-xs">
+                    <input v-model="tempEvent.destination" placeholder="終點" class="bg-slate-50 p-3 rounded-xl border-none text-xs">
                 </div>
-                <button @click="saveEvent" class="clickable w-full bg-lime-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl mt-4">確認加入行程</button>
+                <textarea v-model="tempEvent.note" placeholder="備註..." class="w-full bg-slate-50 p-3 rounded-xl border-none h-20 text-xs"></textarea>
+                <button @click="saveEvent" class="w-full bg-lime-500 text-white py-4 rounded-xl font-bold shadow-lg">確認加入</button>
             </div>
+        </div>
+    </div>
+
+    <div v-if="showExpenseModal" class="fixed inset-0 bg-black/60 z-[9999] flex items-end justify-center">
+        <div class="bg-white w-full max-w-sm p-6 rounded-t-[30px] pb-10 text-center">
+            <h3 class="font-bold mb-4">新增支出 (₩)</h3>
+            <input v-model="newExpItem" placeholder="項目" class="w-full bg-slate-50 p-3 rounded-xl border-none mb-2">
+            <input v-model.number="newExpAmount" type="number" placeholder="金額 (KRW)" class="w-full bg-slate-50 p-3 rounded-xl border-none mb-4">
+            <button @click="addExpense" class="w-full bg-lime-500 text-white py-3 rounded-xl font-bold">確認儲存</button>
+            <button @click="showExpenseModal = false" class="w-full py-3 text-gray-400 text-sm">取消</button>
         </div>
     </div>
 </div>
@@ -160,13 +169,18 @@
             const showAddModal = ref(false);
             const showExpenseModal = ref(false);
             const currentDayIndex = ref(0);
-            const exchangeRate = ref(0.024);
+            const exchangeRate = 0.024;
+            
             const days = ref([{ events: [] }]);
             const expenses = ref([]);
-            const tempEvent = ref({ type: 'spot', time: '12:00', location: '', origin: '', destination: '' });
+            const memos = ref([]);
+            const newMemo = ref('');
+            const newExpItem = ref('');
+            const newExpAmount = ref(0);
+
+            const tempEvent = ref({ type: 'spot', time: '12:00', location: '', origin: '', destination: '', note: '' });
 
             let map = null;
-
             const initMap = async () => {
                 await nextTick();
                 if (!map) {
@@ -177,35 +191,51 @@
 
             const saveEvent = () => {
                 days.value[currentDayIndex.value].events.push({ id: Date.now(), ...tempEvent.value });
-                days.value[currentDayIndex.value].events.sort((a, b) => a.time.localeCompare(b.time));
+                days.value[currentDayIndex.value].events.sort((a,b) => a.time.localeCompare(b.time));
                 showAddModal.value = false;
-                tempEvent.value = { type: 'spot', time: '12:00', location: '', origin: '', destination: '' };
+                tempEvent.value = { type: 'spot', time: '12:00', location: '', origin: '', destination: '', note: '' };
+            };
+
+            const addExpense = () => {
+                if(newExpAmount.value > 0) {
+                    expenses.value.unshift({ payer: '小羊', item: newExpItem.value, amount: newExpAmount.value });
+                    newExpItem.value = ''; newExpAmount.value = 0; showExpenseModal.value = false;
+                }
+            };
+
+            const saveMemo = () => {
+                if(newMemo.value) {
+                    memos.value.unshift({ id: Date.now(), content: newMemo.value });
+                    newMemo.value = '';
+                }
             };
 
             const totalSpentKRW = computed(() => expenses.value.reduce((s, i) => s + i.amount, 0));
 
             onMounted(() => {
-                const saved = localStorage.getItem('Busan_Trip_v3');
+                const saved = localStorage.getItem('Busan_Trip_Final');
                 if (saved) {
-                    const p = JSON.parse(saved);
-                    days.value = p.days || days.value;
-                    expenses.value = p.expenses || [];
+                    const data = JSON.parse(saved);
+                    days.value = data.days || days.value;
+                    expenses.value = data.expenses || [];
+                    memos.value = data.memos || [];
                 }
                 initMap();
             });
 
-            watch([days, expenses], () => {
-                localStorage.setItem('Busan_Trip_v3', JSON.stringify({ days: days.value, expenses: expenses.value }));
+            watch([days, expenses, memos], () => {
+                localStorage.setItem('Busan_Trip_Final', JSON.stringify({
+                    days: days.value, expenses: expenses.value, memos: memos.value
+                }));
             }, { deep: true });
 
             return { 
                 currentTab, showAddModal, showExpenseModal, currentDayIndex, days, tempEvent, 
-                saveEvent, totalSpentKRW, exchangeRate,
-                changeDay: (i) => { currentDayIndex.value = i; },
+                saveEvent, expenses, newExpItem, newExpAmount, addExpense, totalSpentKRW, exchangeRate,
+                memos, newMemo, saveMemo,
                 addDay: () => days.value.push({ events: [] }),
-                openAddModal: () => { showAddModal.value = true; },
-                deleteEvent: (idx) => { days.value[currentDayIndex.value].events.splice(idx, 1); },
-                refreshMap: () => { location.reload(); }
+                deleteEvent: (idx) => days.value[currentDayIndex.value].events.splice(idx, 1),
+                refreshMap: () => location.reload()
             };
         }
     }).mount('#app');

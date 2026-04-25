@@ -11,36 +11,34 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root { --main-lime: #bef264; --dark-lime: #84cc16; --bg-yellow: #fefce8; }
-        body { font-family: 'M PLUS Rounded 1c', sans-serif; background-color: var(--bg-yellow); color: #334155; }
+        body { font-family: 'M PLUS Rounded 1c', sans-serif; background-color: var(--bg-yellow); color: #334155; margin: 0; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
         .pt-safe { padding-top: env(safe-area-inset-top); }
         .clickable { cursor: pointer !important; pointer-events: auto !important; }
+        
         .day-active { background-color: var(--dark-lime) !important; color: white !important; border-color: var(--dark-lime) !important; }
         .day-inactive { background-color: white !important; color: #4d7c0f !important; border-color: var(--main-lime) !important; }
         
-        /* 徹底防止文字溢出的關鍵 CSS */
-        .event-card-content { 
-            overflow-wrap: anywhere; 
-            word-break: break-all;
-            min-width: 0; /* 讓 flex 子元素可以縮小 */
-        }
+        .event-card-content { overflow-wrap: anywhere; word-break: break-all; min-width: 0; }
 
         .add-btn-fixed {
-            position: fixed !important; bottom: 30px !important; right: 20px !important;
-            background-color: var(--dark-lime) !important; color: white !important;
-            width: 64px !important; height: 64px !important; border-radius: 50% !important;
-            z-index: 999 !important; border: 4px solid white !important;
-            display: flex !important; align-items: center !important; justify-content: center !important;
-            font-size: 30px !important; box-shadow: 0 8px 20px rgba(132, 204, 22, 0.4) !important;
+            position: fixed; bottom: 30px; right: 20px;
+            background-color: var(--dark-lime); color: white;
+            width: 64px; height: 64px; border-radius: 50%;
+            z-index: 999; border: 4px solid white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 30px; box-shadow: 0 8px 20px rgba(132, 204, 22, 0.4);
         }
-        #schedule-map { width: 100%; height: 100%; z-index: 1; border-radius: 20px; }
+        /* 修正地圖容器，確保高度固定 */
+        .map-wrapper { width: 100%; height: 200px; border-radius: 24px; overflow: hidden; background: #eee; border: 4px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        #schedule-map { width: 100%; height: 100%; z-index: 1; }
     </style>
 </head>
 <body class="h-screen overflow-hidden flex flex-col">
 
-<div id="app" class="flex flex-col h-full relative">
-    <header class="bg-white pt-safe shadow-sm border-b border-lime-200 sticky top-0 z-[100]">
+<div id="app" class="flex flex-col h-full">
+    <header class="bg-white pt-safe shadow-sm border-b border-lime-200 shrink-0 z-[100]">
         <div class="px-6 pt-4 pb-2 flex justify-between items-center">
             <h1 class="text-lg font-bold text-gray-800">2026" 釜山Trip 🌿</h1>
             <button @click="showDataModal = true" class="clickable text-gray-400 p-2 text-xl">⚙️</button>
@@ -54,9 +52,9 @@
             </button>
         </div>
 
-        <div v-if="currentTab === 'schedule'" class="px-4 py-3 bg-lime-50/50 flex items-center gap-2 overflow-x-auto no-scrollbar relative z-[110]">
+        <div v-if="currentTab === 'schedule'" class="px-4 py-3 bg-lime-50/50 flex items-center gap-2 overflow-x-auto no-scrollbar">
              <button v-for="(day, index) in days" :key="index" @click="currentDayIndex = index" 
-                class="clickable flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border-2 transition-all shadow-sm" 
+                class="clickable flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border-2 transition-all" 
                 :class="currentDayIndex === index ? 'day-active' : 'day-inactive'">
                 DAY {{ index }}
             </button>
@@ -64,9 +62,9 @@
         </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto p-5 pb-28 relative z-10">
+    <main class="flex-1 overflow-y-auto p-5 pb-32" id="main-content">
         <div v-if="currentTab === 'schedule'" class="space-y-6">
-            <div class="w-full h-48 rounded-[30px] overflow-hidden border-4 border-white shadow-sm">
+            <div class="map-wrapper">
                 <div id="schedule-map"></div>
             </div>
 
@@ -83,12 +81,12 @@
                                 
                                 <div v-if="event.type === 'spot'">
                                     <h3 class="font-bold text-gray-800 text-base leading-tight">{{ event.location }}</h3>
-                                    <a :href="'nmap://search?query=' + encodeURIComponent(event.location) + '&appname=BusanTrip'" target="_blank" class="clickable mt-2 inline-flex items-center text-[10px] bg-sky-50 text-sky-600 border border-sky-200 px-3 py-1.5 rounded-full font-bold">naver map</a>
+                                    <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(event.location)" target="_blank" class="clickable mt-2 inline-flex items-center text-[10px] bg-sky-50 text-sky-600 border border-sky-200 px-3 py-1.5 rounded-full font-bold">Naver Map</a>
                                 </div>
                                 
                                 <div v-else>
                                     <div class="text-sm font-bold text-gray-700">{{ event.origin }} ➔ {{ event.destination }}</div>
-                                    <a :href="'nmap://search?query=' + encodeURIComponent(event.destination) + '&appname=BusanTrip'" 
+                                    <a :href="'https://map.naver.com/v5/directions/-/,-/' + encodeURIComponent(event.destination) + ',,,address'" 
                                        target="_blank" 
                                        class="clickable mt-2 inline-flex items-center text-[10px] bg-lime-50 text-lime-700 border border-lime-200 px-3 py-1.5 rounded-full font-bold">
                                         naver map
@@ -137,8 +135,8 @@
 
         <div v-if="currentTab === 'memo'" class="space-y-4">
             <div class="bg-white p-4 rounded-2xl shadow-sm border border-lime-100">
-                <textarea v-model="newMemoContent" placeholder="在此輸入備忘..." class="w-full border-none h-24 text-sm focus:ring-0"></textarea>
-                <button @click="addMemo" class="w-full bg-gray-800 text-white py-3 rounded-xl font-bold text-xs">儲存備忘錄</button>
+                <textarea v-model="newMemoContent" placeholder="在此輸入備忘..." class="w-full border-none h-24 text-sm focus:ring-0 outline-none"></textarea>
+                <button @click="addMemo" class="w-full bg-gray-800 text-white py-3 rounded-xl font-bold text-xs mt-2">儲存備忘錄</button>
             </div>
             <div v-for="(m, i) in memos" :key="m.id" class="bg-white p-4 rounded-xl shadow-sm relative border-l-4 border-lime-400">
                 <button @click="memos.splice(i, 1)" class="absolute top-2 right-2 text-gray-300">×</button>
@@ -208,8 +206,6 @@
             const currentTab = ref('schedule');
             const showAddModal = ref(false), showExpenseModal = ref(false), showDataModal = ref(false);
             const isEditing = ref(false), editIndex = ref(-1), currentDayIndex = ref(0);
-            
-            // 分帳專用編輯狀態
             const isEditingExpense = ref(false), editExpenseIdx = ref(-1);
             
             const exchangeRate = ref(0.024);
@@ -223,14 +219,46 @@
 
             const getTransportIcon = (m) => ({ 'Subway':'🚇', 'Bus':'🚌', 'Taxi':'🚕', 'Walk':'🚶', 'Flight':'✈️' }[m] || '📍');
 
+            // --- 地圖處理核心 ---
             let map = null;
             const initMap = async () => {
-                await nextTick();
-                if (!map) {
-                    map = L.map('schedule-map', { zoomControl: false, attributionControl: false }).setView([35.1796, 129.0756], 12);
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+                await nextTick(); // 等待 Vue 渲染 DOM
+                const mapContainer = document.getElementById('schedule-map');
+                if (!mapContainer) return;
+
+                // 如果已經有地圖實體，先移除它
+                if (map) {
+                    map.remove();
+                    map = null;
                 }
+
+                // 重新初始化
+                map = L.map('schedule-map', { 
+                    zoomControl: false, 
+                    attributionControl: false 
+                }).setView([35.1796, 129.0756], 12);
+                
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             };
+
+            // 監聽 Tab 切換
+            watch(currentTab, (newTab) => {
+                // 每次切換分頁都讓內容區域回到頂部，防止版面跳動
+                const main = document.getElementById('main-content');
+                if (main) main.scrollTop = 0;
+
+                // 如果切換回行程，重新載入地圖
+                if (newTab === 'schedule') {
+                    initMap();
+                }
+            });
+
+            // 監聽天數切換（有時候地圖在天數切換時也需要 resize）
+            watch(currentDayIndex, () => {
+                if (map) {
+                    setTimeout(() => map.invalidateSize(), 100);
+                }
+            });
 
             const openAddModal = () => { isEditing.value = false; tempEvent.value = { type: 'spot', time: '12:00', location: '', origin: '', destination: '', note: '', transportMode: 'Subway' }; showAddModal.value = true; };
             const editEvent = (idx) => { isEditing.value = true; editIndex.value = idx; tempEvent.value = { ...days.value[currentDayIndex.value].events[idx] }; showAddModal.value = true; };
@@ -242,7 +270,6 @@
                 showAddModal.value = false;
             };
 
-            // 分帳功能修正
             const openExpenseModal = () => {
                 isEditingExpense.value = false;
                 newExpense.value = { id: Date.now(), payer: '小羊', item: '', amount: 0, currency: 'KRW' };
@@ -300,7 +327,9 @@
                     memos.value = p.memos || [];
                     exchangeRate.value = p.exchangeRate || 0.024;
                 }
-                initMap();
+                if (currentTab.value === 'schedule') {
+                    initMap();
+                }
             });
 
             watch([days, expenses, memos, exchangeRate], () => {

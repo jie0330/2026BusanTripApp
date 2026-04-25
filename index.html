@@ -20,6 +20,16 @@
         .day-active { background-color: var(--dark-lime) !important; color: white !important; border-color: var(--dark-lime) !important; }
         .day-inactive { background-color: white !important; color: #4d7c0f !important; border-color: var(--main-lime) !important; }
         
+        /* 修正時間與圓點的容器 */
+        .timeline-container { position: relative; padding-left: 24px; }
+        .timeline-line { position: absolute; left: 8px; top: 12px; bottom: -28px; width: 2px; background-color: #d9f99d; }
+        .timeline-dot { 
+            position: absolute; left: -1px; top: 4px; z-index: 20; 
+            background-color: white; width: 20px; height: 20px; 
+            border: 2px solid var(--dark-lime); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 10px;
+        }
+
         .event-card-content { overflow-wrap: anywhere; word-break: break-all; min-width: 0; }
 
         .add-btn-fixed {
@@ -67,43 +77,45 @@
                 <div id="schedule-map"></div>
             </div>
 
-            <div class="relative space-y-5 pl-4 border-l-2 border-lime-200 ml-2">
-                <div v-for="(event, eIndex) in days[currentDayIndex].events" :key="event.id" class="relative pl-6">
-                    <div class="absolute -left-[21px] top-1 z-20 bg-white w-5 h-5 border-2 border-lime-500 rounded-full flex items-center justify-center text-[10px]">
+            <div class="ml-2">
+                <div v-for="(event, eIndex) in days[currentDayIndex].events" :key="event.id" class="timeline-container pb-8">
+                    <div v-if="eIndex !== days[currentDayIndex].events.length - 1" class="timeline-line"></div>
+                    <div class="timeline-dot">
                          {{ getTransportIcon(event.transportMode) }}
                     </div>
 
                     <div class="p-4 rounded-2xl shadow-sm border border-white bg-white/80 overflow-hidden">
-                        <div class="flex justify-between items-start gap-4">
+                        <div class="flex justify-between items-start gap-3">
                             <div class="flex-1 event-card-content">
-                                <div class="font-bold text-[10px] text-lime-600 mb-1 tracking-widest">{{ event.time }}</div>
+                                <div class="font-bold text-[11px] text-lime-600 mb-2 tracking-widest">{{ event.time }}</div>
                                 
                                 <div v-if="event.type === 'spot'">
                                     <h3 class="font-bold text-gray-800 text-base leading-tight">{{ event.location }}</h3>
                                     <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(event.location)" target="_blank" class="clickable mt-2 inline-flex items-center text-[10px] bg-sky-50 text-sky-600 border border-sky-200 px-3 py-1.5 rounded-full font-bold">Naver Map</a>
                                 </div>
                                 
-                                <div v-else class="space-y-1">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-[9px] bg-gray-400 text-white px-1 rounded">FROM</span>
+                                <div v-else class="space-y-2">
+                                    <div class="flex items-start gap-2">
+                                        <span class="text-[9px] bg-gray-300 text-white px-1.5 rounded mt-1 shrink-0">FROM</span>
                                         <span class="text-sm font-medium text-gray-500">{{ event.origin }}</span>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-[9px] bg-lime-500 text-white px-1 rounded text-center" style="min-width: 28px;">TO</span>
+                                    <div class="flex items-start gap-2">
+                                        <span class="text-[9px] bg-lime-500 text-white px-1.5 rounded mt-1 shrink-0" style="min-width: 32px; text-align: center;">TO</span>
                                         <span class="text-sm font-bold text-gray-800">{{ event.destination }}</span>
                                     </div>
                                     <a :href="'https://map.naver.com/v5/directions/-/,-/' + encodeURIComponent(event.destination) + ',,,address'" 
                                        target="_blank" 
-                                       class="clickable mt-2 inline-flex items-center text-[10px] bg-lime-50 text-lime-700 border border-lime-200 px-3 py-1.5 rounded-full font-bold">
+                                       class="clickable mt-1 inline-flex items-center text-[10px] bg-lime-50 text-lime-700 border border-lime-200 px-3 py-1.5 rounded-full font-bold">
                                         naver map
                                     </a>
                                 </div>
                                 
-                                <div v-if="event.note" class="mt-3 text-[11px] text-gray-500 bg-gray-50 p-2 rounded-lg italic">{{ event.note }}</div>
+                                <div v-if="event.note" class="mt-3 text-[11px] text-gray-400 bg-gray-50/50 p-2 rounded-lg italic">{{ event.note }}</div>
                             </div>
-                            <div class="flex flex-col gap-4 flex-shrink-0 w-8 items-center pt-1">
-                                <button @click="deleteEvent(eIndex)" class="clickable text-gray-300 text-2xl leading-none">×</button>
-                                <button @click="editEvent(eIndex)" class="clickable text-lime-400 text-sm">✎</button>
+
+                            <div class="flex flex-col gap-5 flex-shrink-0 w-6 items-center pt-1">
+                                <button @click="deleteEvent(eIndex)" class="clickable text-gray-300 text-xl leading-none">×</button>
+                                <button @click="editEvent(eIndex)" class="clickable text-lime-400 text-xs">✎</button>
                             </div>
                         </div>
                     </div>
@@ -167,7 +179,7 @@
                 <div class="flex gap-1 overflow-x-auto no-scrollbar py-1">
                     <button v-for="m in ['Subway','Bus','Taxi','Walk','Flight']" @click="tempEvent.transportMode = m" 
                         :class="tempEvent.transportMode === m ? 'bg-lime-500 text-white' : 'bg-gray-100 text-gray-400'"
-                        class="px-3 py-2 rounded-xl text-[10px] font-bold flex-shrink-0 transition-colors">
+                        class="px-3 py-2 rounded-xl text-[10px] font-bold flex-shrink-0">
                         {{ getTransportIcon(m) }} {{ m }}
                     </button>
                 </div>
@@ -180,17 +192,15 @@
     <div v-if="showExpenseModal" class="fixed inset-0 bg-black/60 z-[9999] flex items-end justify-center">
         <div class="bg-white w-full max-w-sm p-6 rounded-t-[30px] pb-10 shadow-2xl">
             <h3 class="font-bold mb-4 text-center">{{ isEditingExpense ? '編輯支出' : '新增支出' }}</h3>
-            <div class="flex gap-2 mb-4">
-                <button v-for="n in peopleNames" :key="n" @click="newExpense.payer = n" :class="newExpense.payer === n ? 'bg-lime-500 text-white' : 'bg-gray-100'" class="clickable flex-1 py-3 rounded-xl font-bold text-xs">{{ n }}</button>
+            <div class="flex gap-2 mb-4 text-[10px]">
+                <button v-for="n in peopleNames" :key="n" @click="newExpense.payer = n" :class="newExpense.payer === n ? 'bg-lime-500 text-white' : 'bg-gray-100'" class="clickable flex-1 py-3 rounded-xl font-bold">{{ n }}</button>
             </div>
             <div class="flex gap-2 mb-4">
                 <button @click="newExpense.currency = 'KRW'" :class="newExpense.currency === 'KRW' ? 'bg-lime-200 border-lime-500 text-lime-800' : 'bg-gray-50 text-gray-400'" class="flex-1 py-2 border rounded-xl font-bold text-xs">₩ 韓幣</button>
                 <button @click="newExpense.currency = 'TWD'" :class="newExpense.currency === 'TWD' ? 'bg-lime-200 border-lime-500 text-lime-800' : 'bg-gray-50 text-gray-400'" class="flex-1 py-2 border rounded-xl font-bold text-xs">$ 台幣</button>
             </div>
             <input v-model="newExpense.item" placeholder="項目" class="w-full bg-gray-50 p-4 rounded-2xl border-none mb-3 font-bold text-center text-sm">
-            <div class="relative mb-6">
-                <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="w-full bg-gray-50 p-4 rounded-2xl border-none font-bold text-center" inputmode="numeric">
-            </div>
+            <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="w-full bg-gray-50 p-4 rounded-2xl border-none font-bold text-center mb-6" inputmode="numeric">
             <div class="flex gap-3">
                 <button @click="showExpenseModal = false" class="flex-1 bg-gray-100 text-gray-400 py-4 rounded-2xl font-bold">取消</button>
                 <button @click="saveExpense" class="flex-[2] bg-lime-500 text-white py-4 rounded-2xl font-bold shadow-lg">儲存</button>
@@ -241,8 +251,6 @@
             };
 
             watch(currentTab, (newTab) => {
-                const main = document.getElementById('main-content');
-                if (main) main.scrollTop = 0;
                 if (newTab === 'schedule') initMap();
             });
 
@@ -277,7 +285,7 @@
                 const data = JSON.stringify({ days: days.value, expenses: expenses.value, memos: memos.value, exchangeRate: exchangeRate.value });
                 const blob = new Blob([data], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = 'Busan_Trip_Backup.json'; a.click();
+                const a = document.createElement('a'); a.href = url; a.download = 'Busan_Trip_Data.json'; a.click();
             };
 
             onMounted(() => {

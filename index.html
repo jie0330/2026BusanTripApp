@@ -75,15 +75,15 @@
                                 
                                 <div v-if="event.type === 'spot'">
                                     <h3 class="font-bold text-gray-800 text-base">{{ event.location }}</h3>
-                                    <a :href="'https://map.naver.com/v5/search/' + encodeURIComponent(event.location)" target="_blank" class="clickable mt-2 inline-flex items-center text-[10px] bg-sky-50 text-sky-600 border border-sky-200 px-3 py-1.5 rounded-full font-bold">🗺️ Naver Map</a>
+                                    <a :href="'nmap://search?query=' + encodeURIComponent(event.location) + '&appname=BusanTrip'" target="_blank" class="clickable mt-2 inline-flex items-center text-[10px] bg-sky-50 text-sky-600 border border-sky-200 px-3 py-1.5 rounded-full font-bold">🗺️ 開啟 Naver App</a>
                                 </div>
                                 
                                 <div v-else>
                                     <div class="text-sm font-bold text-gray-700">{{ event.origin }} ➔ {{ event.destination }}</div>
-                                    <a :href="'https://m.map.naver.com/route.nhn?menu=route&sname=' + encodeURIComponent(event.origin) + '&ename=' + encodeURIComponent(event.destination) + '&pathType=1'" 
+                                    <a :href="'nmap://route/public?sname=' + encodeURIComponent(event.origin) + '&ename=' + encodeURIComponent(event.destination) + '&appname=BusanTrip'" 
                                        target="_blank" 
                                        class="clickable mt-2 inline-flex items-center text-[10px] bg-lime-50 text-lime-700 border border-lime-200 px-3 py-1.5 rounded-full font-bold">
-                                        🚀 路線規劃 (穩)
+                                        🚀 App 導航
                                     </a>
                                 </div>
                                 
